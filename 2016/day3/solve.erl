@@ -23,7 +23,7 @@ t1() ->
 
 t2() ->
 	L = parse_input("input1.txt"),
-	t2(L).
+	length(t2(L)).
 t2([]) ->
 	[];
 t2([[A1, B1, C1], [A2, B2, C2], [A3, B3, C3] | T]) ->
