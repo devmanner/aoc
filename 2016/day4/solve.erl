@@ -63,7 +63,7 @@ decrypt({L, ID, _CS}) ->
     end,
     lists:map(F, L).
 
-# erl -pa . -eval "solve:do2(),erlang:halt()" | grep north
+%% erl -pa . -eval "solve:do2(),erlang:halt()" | grep north
 do2() ->
     L = parse_file("input1.txt"),
     F = fun(Room) ->
