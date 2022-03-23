@@ -18,15 +18,19 @@ acc(X, Y) ->
         false -> space
     end.
 
-draw_cell(X, Y) ->
+draw_cell(X, Y, Map) ->
     case is_wall(X, Y) of
         true -> io:format("#");
-        false -> io:format(".")
+        false ->
+            case maps:get({X, Y}, Map, ?MASSIVE) =< 50 of
+                true -> io:format("+");
+                false -> io:format(" ")
+            end
     end.
-draw(Xmax, Ymax) ->
+draw(Xmax, Ymax, Map) ->
     lists:foreach(fun(Y) ->
         lists:foreach(fun(X) ->
-            draw_cell(X, Y) end, lists:seq(0, Xmax)),
+            draw_cell(X, Y, Map) end, lists:seq(0, Xmax)),
         io:format("~n") end, lists:seq(0, Ymax)).
 
 
@@ -34,7 +38,7 @@ cell_cost(X, Y, Map) ->
     case is_wall(X, Y) of
         true -> unreachable;
         false ->
-            maps:get({X, Y}, ?MASSIVE, Map)
+            maps:get({X, Y}, Map, ?MASSIVE)
     end.
 
 min(L) ->
@@ -48,16 +52,20 @@ min(L) ->
             end,
     lists:foldl(F, ?MASSIVE, L).
 
-update_cost(0, 0, Map) ->
-    maps:put({0, 0}, 0, Map);
+update_cost(1, 1, Map) ->
+    maps:put({1, 1}, 0, Map);
 update_cost(X, Y, Map) ->
-    Min = min([ cell_cost(X+1, Y, Map),
-                cell_cost(X-1, Y, Map),
-                cell_cost(X, Y+1, Map),
-                cell_cost(X, Y-1, Map) ]),
-    case Min+1 < maps:get({X, Y}, ?MASSIVE, Map) of
-        true -> maps:put({X, Y}, Min+1, Map);
-        false -> Map
+    case acc(X, Y) of
+        wall -> Map;
+        space -> 
+            Min = min([ cell_cost(X+1, Y, Map),
+                        cell_cost(X-1, Y, Map),
+                        cell_cost(X, Y+1, Map),
+                        cell_cost(X, Y-1, Map) ]),
+            case Min+1 < maps:get({X, Y}, Map, ?MASSIVE) of
+                true -> maps:put({X, Y}, Min+1, Map);
+                false -> Map
+            end
     end.
 
 update(Xmax, Ymax, Map) ->
@@ -65,9 +73,18 @@ update(Xmax, Ymax, Map) ->
             lists:foldl(fun(X, M) -> update_cost(X, Y, M) end, YMap, lists:seq(0, Xmax))
         end,
     case lists:foldl(F, Map, lists:seq(0, Ymax)) of
-        Map -> io:format("Done!");
+        Map -> Map;
         NewMap -> update(Xmax, Ymax, NewMap)
     end.
+
+do1() ->
+    M = solve:update(50, 50, maps:new()),
+    maps:get({31,39}, M).
+
+do2() ->
+    M = solve:update(50, 50, maps:new()),
+    V = maps:values(M),
+    length(lists:filter(fun(X) -> X =< 50 end, V)).
 
 test() ->
     1 = count_bits(1),
@@ -78,5 +95,12 @@ test() ->
     
     wall = acc(-1,0),
     wall = acc(0,-1),
+
+    1 = min([3,2,1]),
+    1 = min([1]),
+    1 = min([unreachable, 2, 1, 3]),
+
+    82 = do1(),
+    138 = do2(),
 
     ok.
