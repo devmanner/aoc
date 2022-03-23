@@ -3,6 +3,15 @@
 
 -define(SALT, "cuanljph").
 
+shash(Salt, N) ->
+    hashn(Salt, N, 2017).
+
+hashn(Salt, N, Times) ->
+    F = fun(_, Acc) ->
+            string:lowercase(binary:encode_hex(crypto:hash(md5, Acc)))
+        end,
+    binary_to_list(lists:foldl(F, Salt ++ integer_to_list(N), lists:seq(1, Times))).
+
 hash(Salt, N) ->
     b2h(crypto:hash(md5, Salt ++ integer_to_list(N))).
 
@@ -25,8 +34,9 @@ classify([H|T], _, _, Mode) ->
 
 %% TMap maps: N -> Char
 %% QMap maps: Char => ordset(N)
-update(Salt, N, TMap, QMap) ->
-    L = classify(hash(Salt, N)),
+update(Salt, N, TMap, QMap, Algo) ->
+    Hash = apply(?MODULE, Algo, [Salt, N]),
+    L = classify(Hash),
     F = fun(X, Acc) ->
             maps:update_with(X, fun(Old) -> ordsets:add_element(N, Old) end, ordsets:from_list([N]), Acc)
         end,
@@ -35,9 +45,9 @@ update(Salt, N, TMap, QMap) ->
         lists:foldl(F, QMap, proplists:get_all_values(quintuple, L))
     }.
 
-update_range(Salt, NMin, NMax, InitTMap, InitQMap) ->
+update_range(Salt, NMin, NMax, InitTMap, InitQMap, Algo) ->
     F = fun(N, {TMap, QMap}) ->
-        update(Salt, N, TMap, QMap)
+        update(Salt, N, TMap, QMap, Algo)
     end,
     lists:foldl(F, {InitTMap, InitQMap}, lists:seq(NMin, NMax)).
 
@@ -49,26 +59,29 @@ is_key(N, TMap, QMap, Max) when N+1000 < Max ->
             not ([] == Quintiples)
     end.
 
-find_keys(Salt) ->
+find_keys(Salt, Algo) ->
     Start = 0,
     Max = Start+1000,
     io:format("Init map: ~p to ~p~n", [Start, Max]),
-    {TMap, QMap} = update_range(Salt, Start, Max, maps:new(), maps:new()),
-    find_keys(Salt, Start, TMap, QMap, Max, []).
-find_keys(_Salt, _N, _TMap, _QMap, _Max, Keys) when length(Keys) >= 64 ->
+    {TMap, QMap} = update_range(Salt, Start, Max, maps:new(), maps:new(), Algo),
+    find_keys(Salt, Start, TMap, QMap, Max, [], Algo).
+find_keys(_Salt, _N, _TMap, _QMap, _Max, Keys, _Algo) when length(Keys) >= 64 ->
     Keys;
-find_keys(Salt, N, TMap, QMap, Max, Keys) when N+1000 >= Max ->
+find_keys(Salt, N, TMap, QMap, Max, Keys, Algo) when N+1000 >= Max ->
     io:format("Update range: ~p to ~p~n", [Max+1, Max*2]),
-    {NewTMap, NewQMap} = solve:update_range(Salt, Max+1, Max*2, TMap, QMap),
-    find_keys(Salt, N, NewTMap, NewQMap, Max*2, Keys);
-find_keys(Salt, N, TMap, QMap, Max, Keys) ->
+    {NewTMap, NewQMap} = solve:update_range(Salt, Max+1, Max*2, TMap, QMap, Algo),
+    find_keys(Salt, N, NewTMap, NewQMap, Max*2, Keys, Algo);
+find_keys(Salt, N, TMap, QMap, Max, Keys, Algo) ->
     case is_key(N, TMap, QMap, Max) of
-        true -> find_keys(Salt, N+1, TMap, QMap, Max, [N|Keys]);
-        false -> find_keys(Salt, N+1, TMap, QMap, Max, Keys)
+        true -> find_keys(Salt, N+1, TMap, QMap, Max, [N|Keys], Algo);
+        false -> find_keys(Salt, N+1, TMap, QMap, Max, Keys, Algo)
     end.
 
 do1() ->
-    hd(find_keys(?SALT)).
+    hd(find_keys(?SALT, hash)).
+
+do2() ->
+    hd(find_keys(?SALT, shash)).
 
 test() ->
     "0a" = b2h(<<0:4,10:4>>),
@@ -88,7 +101,7 @@ test() ->
     "0034e0923cc38887a57bd7b1d4f953df" = hash("abc", 18),
 
     Max = 25000,
-    {TMap, QMap} = solve:update_range("abc", 0, Max, maps:new(), maps:new()),
+    {TMap, QMap} = solve:update_range("abc", 0, Max, maps:new(), maps:new(), hash),
     false = is_key(18, TMap, QMap, Max),
     true = is_key(39, TMap, QMap, Max),
     false = is_key(45, TMap, QMap, Max),
@@ -100,9 +113,17 @@ test() ->
     true = is_key(92, TMap, QMap, Max),
     true = is_key(22728, TMap, QMap, Max),
 
-    22728 = hd(find_keys("abc")),
+    22728 = hd(find_keys("abc", hash)),
 
     23769 = do1(),
-    
+
+    %% Part 2
+    "577571be4de9dcce85a041ba0410f29f" = hashn("abc", 0, 1),
+    "eec80a0c92dc8a0777c619d9bb51e910" = hashn("abc", 0, 2),
+    "16062ce768787384c81fe17a7a60c7e3" = hashn("abc", 0, 3),
+    "a107ff634856bb300138cac6568c0f24" = shash("abc", 0),
+
+    % This is slow
+    %20606 = do1(),
 
     ok.
