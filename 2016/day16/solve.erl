@@ -1,16 +1,11 @@
 -module(solve).
 -compile(export_all).
 
-lbxor([], []) ->  [];
-lbxor([H1|T1], [H2|T2]) ->
-    [H1 bxor H2|lbxor(T1, T2)].
-
 ones(Len) ->
     lists:map(fun(_) -> 1 end, lists:seq(1, Len)).
 
 next(A) ->
-    B = lists:reverse(A),
-    A ++ [0] ++ lbxor(B,  ones(length(A))).
+    A ++ [0] ++ lists:zipwith(fun(X, Y) -> X bxor Y end, lists:reverse(A), ones(length(A))).
 
 checksum(X) ->
     C = checksum(X, []),
@@ -34,19 +29,21 @@ fill(Init, Length) ->
             {Fill, checksum(Fill)}
     end.
 
+print(L) ->
+    lists:foreach(fun(X) -> io:format("~p", [X]) end, L),
+    io:format("~n").
+
 do1() ->
     {_, CS} = fill([0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,0], 272),
+    print(CS),
     CS.
 
 do2() ->
     {_, CS} = fill([0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,0], 35651584),
+    print(CS),
     CS.
 
 test() ->
-    [1] = lbxor([1], [0]),
-    [1,1] = lbxor([1,0], [0,1]),
-
-
     [1,0,0] = next([1]),
     [0,0,1] = next([0]),
     [1,1,1,1,1,0,0,0,0,0,0] = next([1,1,1,1,1]),
@@ -57,5 +54,7 @@ test() ->
     {[1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,1,1,1], [0,1,1,0,0]} = fill([1,0,0,0,0], 20),
 
     [1,0,0,1,1,0,1,0,0,1,0,0,1,0,0,1,0] = do1(),
+
+    false = ([1,1,0,0,0,1,0,1,1,1,1,0,1,0,1,0,1] == do2()),
 
     ok.
