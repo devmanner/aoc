@@ -6,10 +6,30 @@
 shash(Salt, N) ->
     hashn(Salt, N, 2017).
 
+qshash(Salt, N) ->
+    case ets:info(qshash) of
+        undefined -> 
+            ets:new(qshash, [set, named_table]),
+            ets:insert(qshash, {hit, 0}),
+            ets:insert(qshash, {miss, 0});
+        _ -> ok
+    end,
+
+    case ets:lookup(qshash, N) of
+        [{N, Value}] ->
+            ets:update_counter(qshash, hit, 1),
+            Value;
+        [] ->
+            Value = shash(Salt, N),
+            ets:insert(qshash, {N, Value}),
+            ets:update_counter(qshash, miss, 1),
+            Value
+    end.
+
 hashn(Salt, N, Times) ->
     F = fun(_, Acc) ->
-            string:lowercase(binary:encode_hex(crypto:hash(md5, Acc)))
-        end,
+        string:lowercase(binary:encode_hex(crypto:hash(md5, Acc)))
+    end,
     binary_to_list(lists:foldl(F, Salt ++ integer_to_list(N), lists:seq(1, Times))).
 
 hash(Salt, N) ->
@@ -30,7 +50,6 @@ classify([H|T], H, N, Mode) ->
     classify(T, H, N+1, Mode);
 classify([H|T], _, _, Mode) ->
     classify(T, H, 1, Mode).
-
 
 %% TMap maps: N -> Char
 %% QMap maps: Char => ordset(N)
@@ -66,10 +85,15 @@ find_keys(Salt, Algo) ->
     {TMap, QMap} = update_range(Salt, Start, Max, maps:new(), maps:new(), Algo),
     find_keys(Salt, Start, TMap, QMap, Max, [], Algo).
 find_keys(_Salt, _N, _TMap, _QMap, _Max, Keys, _Algo) when length(Keys) >= 64 ->
+    io:format("Found 64 keys~n"),
+    io:format("Hits: ~p Miss: ~p~n", [ets:lookup(qshash, hit), ets:lookup(qshash, miss)]),
+    ets:insert(qshash, {hit, 0}),
+    ets:insert(qshash, {miss, 0}),
     Keys;
 find_keys(Salt, N, TMap, QMap, Max, Keys, Algo) when N+1000 >= Max ->
     io:format("Update range: ~p to ~p~n", [Max+1, Max*2]),
     {NewTMap, NewQMap} = solve:update_range(Salt, Max+1, Max*2, TMap, QMap, Algo),
+    io:format("Finding keys.~n"),
     find_keys(Salt, N, NewTMap, NewQMap, Max*2, Keys, Algo);
 find_keys(Salt, N, TMap, QMap, Max, Keys, Algo) ->
     case is_key(N, TMap, QMap, Max) of
@@ -81,7 +105,7 @@ do1() ->
     hd(find_keys(?SALT, hash)).
 
 do2() ->
-    hd(find_keys(?SALT, shash)).
+    hd(find_keys(?SALT, qshash)).
 
 test() ->
     "0a" = b2h(<<0:4,10:4>>),
