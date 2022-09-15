@@ -9,7 +9,7 @@
 %% Disc #6 has 19 positions; at time=0, it is at position 7.
 
 do1() ->
-    % Answer is the state at t0 that the disks should have in order for a fall-through.
+    % Answer is the state at t0 that the discs should have in order for a fall-through.
     Answer = [6, 11, 0, 1, 12, 13],
     do(0, 999999, calc1, Answer).
 
@@ -29,6 +29,8 @@ do(X, XMax, F, Answer) ->
 
 calc1(X) ->
     [
+        % Calculate disc positions at time X
+        % Position of each disc is:
         % X + start_pos rem n_positions
         (X + 0) rem 7,
         (X + 0) rem 13,
