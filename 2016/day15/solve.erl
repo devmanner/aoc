@@ -11,20 +11,20 @@
 do1() ->
     % Answer is the state at t0 that the discs should have in order for a fall-through.
     Answer = [6, 11, 0, 1, 12, 13],
-    do(0, 999999, calc1, Answer).
+    do(4, 999999, 19, calc1, Answer).
 
 do2() ->
     Answer = [6, 11, 0, 1, 12, 13, 4],
-    do(0, 9999999, calc2, Answer).
+    do(4, 9999999, 19, calc2, Answer).
 
-do(XMax, XMax, _F, _Answer) ->
+do(X, XMax, _Step, _F, _Answer) when X > XMax ->
     not_found;
-do(X, XMax, F, Answer) ->
+do(X, XMax, Step, F, Answer) ->
     case apply(?MODULE, F, [X]) of
         Answer -> 
             X;
         _ ->
-            do(X+1, XMax, F, Answer)
+            do(X+1, XMax, Step, F, Answer)
     end.
 
 calc1(X) ->
@@ -51,7 +51,12 @@ calc2(X) ->
         (X + 0) rem 11
     ].
 
+
 test() ->
+    {Time, ok} = timer:tc(?MODULE, do_test, []),
+    io:format("Test took: ~p~n", [Time]).
+
+do_test() ->
     121834 = do1(),
     3208099 = do2(),
     ok.
