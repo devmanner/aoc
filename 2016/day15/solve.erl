@@ -8,14 +8,30 @@
 %% Disc #5 has 17 positions; at time=0, it is at position 0.
 %% Disc #6 has 19 positions; at time=0, it is at position 7.
 
+%% n + 0 rem 7 = 6
+%% n + 0 rem 13 = 11
+%% n + 2 rem 3 = 0
+%% n + 2 rem 5 = 1
+%% n + 0 rem 17 = 12
+%% n + 7 rem 19 = 13
+
+%% n = 6 + 7k1
+%% n = 11 + 13k2
+%% n = -2 + 3k3
+%% n = -1 + 5k4
+%% n = 12 + 17k5
+%% n = 6 + 19k6
+
+% Find k[1-6]
+
 do1() ->
     % Answer is the state at t0 that the discs should have in order for a fall-through.
     Answer = [6, 11, 0, 1, 12, 13],
-    do(4, 999999, 19, calc1, Answer).
+    do(6, 999999, 19, calc1, Answer).
 
 do2() ->
     Answer = [6, 11, 0, 1, 12, 13, 4],
-    do(4, 9999999, 19, calc2, Answer).
+    do(6, 9999999, 19, calc2, Answer).
 
 do(X, XMax, _Step, _F, _Answer) when X > XMax ->
     not_found;
@@ -24,7 +40,7 @@ do(X, XMax, Step, F, Answer) ->
         Answer -> 
             X;
         _ ->
-            do(X+1, XMax, Step, F, Answer)
+            do(X+Step, XMax, Step, F, Answer)
     end.
 
 calc1(X) ->
@@ -54,7 +70,7 @@ calc2(X) ->
 
 test() ->
     {Time, ok} = timer:tc(?MODULE, do_test, []),
-    io:format("Test took: ~p~n", [Time]).
+    io:format("Test took: ~p ms~n", [Time/1000]).
 
 do_test() ->
     121834 = do1(),
