@@ -1,5 +1,5 @@
 -module(solve).
--export([test/0]).
+-export([test/0, do_test/0]).
 -export([do1/0, do2/0]).
 -export([fill/2]).
 
@@ -22,14 +22,11 @@ checksum([X, Y|T], Acc) ->
 next(A) ->
     lists:concat([A, [0], lists:reverse(lists:map(fun(X) -> X bxor 1 end, A))]).
 
+fill(List, Length) when length(List) < Length ->
+    fill(next(List), Length);
 fill(List, Length) ->
-    case length(List) < Length of
-        true ->
-            fill(next(List), Length);
-        false ->
-            Fill = lists:sublist(List, Length),
-            {Fill, checksum(Fill)}
-    end.
+    Fill = lists:sublist(List, Length),
+    {Fill, checksum(Fill)}.
 
 print(L) ->
     lists:foreach(fun(X) -> io:format("~p", [X]) end, L),
@@ -46,6 +43,10 @@ do2() ->
     CS.
 
 test() ->
+    {Time, ok} = timer:tc(?MODULE, do_test, []),
+    io:format("Test took: ~p ms~n", [Time/1000]).
+
+do_test() ->
     [1,0,0] = next([1]),
     [0,0,1] = next([0]),
     [1,1,1,1,1,0,0,0,0,0,0] = next([1,1,1,1,1]),
