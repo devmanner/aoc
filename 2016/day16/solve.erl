@@ -1,5 +1,5 @@
 -module(solve).
--export([test/0, do_test/0]).
+-export([test/0]).
 -export([do1/0, do2/0]).
 -export([fill/2]).
 
@@ -33,20 +33,26 @@ print(L) ->
     io:format("~n").
 
 do1() ->
-    {_, CS} = fill(?INIT_STATE, 272),
-    print(CS),
-    CS.
+    Fun = fun() ->
+        {_, CS} = fill(?INIT_STATE, 272),
+        print(CS),
+        CS
+    end,
+    {Time, Ret} = timer:tc(Fun),
+    io:format("Test took: ~p ms~n", [Time/1000]),
+    Ret.
 
 do2() ->
-    {_, CS} = fill(?INIT_STATE, 35651584),
-    print(CS),
-    CS.
+    Fun = fun() ->
+        {_, CS} = fill(?INIT_STATE, 35651584),
+        print(CS),
+        CS
+    end,
+    {Time, Ret} = timer:tc(Fun),
+    io:format("Test took: ~p ms~n", [Time/1000]),
+    Ret.
 
 test() ->
-    {Time, ok} = timer:tc(?MODULE, do_test, []),
-    io:format("Test took: ~p ms~n", [Time/1000]).
-
-do_test() ->
     [1,0,0] = next([1]),
     [0,0,1] = next([0]),
     [1,1,1,1,1,0,0,0,0,0,0] = next([1,1,1,1,1]),
