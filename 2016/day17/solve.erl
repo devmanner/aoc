@@ -35,40 +35,44 @@ path(_Op, _Passcode, 3, 3, Path) ->
     Path;
 path(Op, Passcode, Row, Col, Path) ->
     [Up, Down, Left, Right] = door_states(Passcode, Row, Col, Path),
-    case list(Op, [
-                path(Op, Passcode, Right, Row, Col+1, Path ++ [$R]),
-                path(Op, Passcode, Down, Row+1, Col, Path ++ [$D]),
-                path(Op, Passcode, Left, Row, Col-1, Path ++ [$L]),
-                path(Op, Passcode, Up, Row-1, Col, Path ++ [$U])
+    case opest_in_list(Op, [
+                enter_door(Op, Passcode, Right, Row, Col+1, Path ++ [$R]),  % Right
+                enter_door(Op, Passcode, Down, Row+1, Col, Path ++ [$D]),   % Down
+                enter_door(Op, Passcode, Left, Row, Col-1, Path ++ [$L]),   % Left
+                enter_door(Op, Passcode, Up, Row-1, Col, Path ++ [$U])      % Up
             ]) of
         [] -> dead_end;
         L -> L
     end.
 
-path(_Op, _Passcode, closed, _Row, _Col, _Path) ->
+enter_door(_Op, _Passcode, closed, _Row, _Col, _Path) ->
     dead_end;
-path(Op, Passcode, open, Row, Col, Path) ->
+enter_door(Op, Passcode, open, Row, Col, Path) ->
     path(Op, Passcode, Row, Col, Path).
 
-list(Op, L) ->
+opest_in_list(Op, L) ->
     case lists:filter(fun(X) -> X /= dead_end end, L) of
         [] -> [];
-        [H|T] -> list(Op, T, H)
+        [H|T] -> opest_in_list(Op, T, H)
     end.
 
-list(_Op, [], Acc) ->
+opest_in_list(_Op, [], Acc) ->
     Acc;
-list(Op, [L|T], Acc) ->
+opest_in_list(Op, [L|T], Acc) ->
     case Op(length(L), length(Acc)) of
-        true -> list(Op, T, L);
-        false -> list(Op, T, Acc)
+        true -> opest_in_list(Op, T, L);
+        false -> opest_in_list(Op, T, Acc)
     end.
 
 do1() ->
-    shortest_path(?PASSCODE).
+    {MicroSeconds, RV} = timer:tc(fun() -> shortest_path(?PASSCODE) end),
+    io:format("do1 took: ~pms~n", [MicroSeconds/1000]),
+    RV.
 
 do2() ->
-    length(longest_path(?PASSCODE)).
+    {MicroSeconds, RV} = timer:tc(fun() -> longest_path(?PASSCODE) end),
+    io:format("do2 took: ~pms~n", [MicroSeconds/1000]),
+    length(RV).
 
 test() ->
     closed = is_open(1),
@@ -87,11 +91,12 @@ test() ->
     [open, open, open, closed] = door_states("3", 2, 3, []),
 
     Shortest = fun(X, Y) -> X < Y end,
-    [] = list(Shortest, [dead_end, dead_end]),
-    [1] = list(Shortest, [[1], [1,2], dead_end]),
-    [1] = list(Shortest, [[1,2], [1], dead_end]),
-    [1] = list(Shortest, [dead_end, [1], [1,2]]),
+    [] = opest_in_list(Shortest, [dead_end, dead_end]),
+    [1] = opest_in_list(Shortest, [[1], [1,2], dead_end]),
+    [1] = opest_in_list(Shortest, [[1,2], [1], dead_end]),
+    [1] = opest_in_list(Shortest, [dead_end, [1], [1,2]]),
     
+    % Test cases given in problem description part 1
     "DDRRRD" = shortest_path("ihgpwlah"),
     "DDUDRLRRUDRD" = shortest_path("kglvqrro"),
     "DRURDRUDDLLDLUURRDULRLDUUDDDRR" = shortest_path("ulqzkmiv"),
@@ -99,11 +104,12 @@ test() ->
     % Part 1
     "DURLDRRDRD" = do1(),
 
-    % Part 2
+    % Test cases given in problem description part 2
     370 = length(longest_path("ihgpwlah")),
     492 = length(longest_path("kglvqrro")),
     830 = length(longest_path("ulqzkmiv")),
 
+    % Part 2
     650 = do2(),
 
     ok.
