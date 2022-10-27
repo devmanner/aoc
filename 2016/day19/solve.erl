@@ -11,8 +11,9 @@ clean_empty(L) ->
 
 round(L) ->
     round(L, []).
-round([{Id, 0}], Acc) ->
-    clean_empty(lists:reverse([{Id, 0}|Acc]));
+
+round([{_Id, 0}], Acc) ->
+    clean_empty(lists:reverse(Acc));
 round([{Id, N}], Acc) ->
     {FirstId, FirstN} = lists:last(Acc),
     clean_empty(lists:reverse([{Id, N+FirstN}|lists:droplast(Acc)] ++ [{FirstId, 0}]));
@@ -32,7 +33,6 @@ do1() ->
     play(3012210).
 
 test() ->
-
     3 = play(5),
 
     1830117 = do1(),
