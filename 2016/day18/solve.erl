@@ -17,7 +17,7 @@ next([$.,$^,$^|T], Acc) ->
 % Only its left tile is a trap.
 next([$^,$.,$.|T], Acc) ->
     next([$.,$.|T], [$^|Acc]);
-% Only its right tile is a trap.
+% Only its right tile i s a trap.
 next([$.,$.,$^|T], Acc) ->
     next([$.,$^|T], [$^|Acc]);
 % In any other situation, the new tile is safe.
