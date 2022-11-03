@@ -31,7 +31,7 @@ instr(Reg, Done, [I={jnz, X, Y}|T]) ->
     dbg("Exec: ~p ~p~n", [I, Reg]),
     case value(Reg, X) =/= 0 of
         true ->
-            {Done2, Todo} = lists:split(length(Done) + Y, Done ++ [{jnz, X, Y}|T]),
+            {Done2, Todo} = lists:split(length(Done) + value(Reg, Y), Done ++ [{jnz, X, Y}|T]),
             instr(Reg, Done2, Todo);
         false ->
             instr(Reg, Done ++ [{jnz, X, Y}], T)
