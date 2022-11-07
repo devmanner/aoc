@@ -1,4 +1,5 @@
 -module(solve).
+-compile(nowarn_export_all).
 -compile(export_all).
 
 -define(INPUT, "^.^^^.^..^....^^....^^^^.^^.^...^^.^.^^.^^.^^..^.^...^.^..^.^^.^..^.....^^^.^.^^^..^^...^^^...^...^.").
@@ -8,6 +9,7 @@ next(S) ->
 
 next([_,_], Acc) ->
     lists:reverse(Acc);
+
 % Its left and center tiles are traps, but its right tile is not.
 next([$^,$^,$.|T], Acc) ->
     next([$^,$.|T], [$^|Acc]);
@@ -25,8 +27,13 @@ next([_,C,R|T], Acc) ->
     next([C,R|T], [$.|Acc]).
 
 n_safe_tiles(S) ->
-    IsSafe = fun(X) -> X == $. end,
-    length(lists:filter(IsSafe, S)).
+    CountSafe = fun(X, Acc) ->
+        case X of
+            $^ -> Acc;
+            $. -> Acc+1
+        end
+    end,
+    lists:foldl(CountSafe, 0, S).
 n_safe_tiles(N, S) ->
     F = fun(_, {SafeTiles, Prev}) ->
         Next = next(Prev),
@@ -35,10 +42,14 @@ n_safe_tiles(N, S) ->
     lists:foldl(F, {n_safe_tiles(S), S}, lists:seq(1, N-1)).
 
 do1() ->
-    n_safe_tiles(40, ?INPUT).
+    {MicroSeconds, RV} = timer:tc(fun() -> n_safe_tiles(40, ?INPUT) end),
+    io:format("Test took: ~pms~n", [MicroSeconds/1000]),
+    RV.
 
 do2() ->
-    n_safe_tiles(400000, ?INPUT).
+    {MicroSeconds, RV} = timer:tc(fun() -> n_safe_tiles(400000, ?INPUT) end),
+    io:format("Test took: ~pms~n", [MicroSeconds/1000]),
+    RV.
 
 % Calculate all the rows up to N. Mainly for testing.
 rows(N, S) ->
