@@ -38,7 +38,7 @@ int play(int circle_size) {
 
     while (circle.size() != 1) {
         itr_t itr = circle.begin();
-        list<pair<int, int> >::iterator opp = circle.begin();
+        itr_t opp = circle.begin();
         advance(opp, circle.size() / 2);
 
         cout << "Number of players playing a round: " << circle.size() << endl;
@@ -61,7 +61,7 @@ int main() {
     test();
 
     int winner = play(3012210);
-    cout << "Winner ID: " << winner << endl;
+    cout << "Winner ID: " << winner << ((winner == 1417887) ? " correct!" : " wrong...") << endl;
 
     return 0;
 }
