@@ -39,7 +39,7 @@ int play(int circle_size) {
     while (circle.size() != 1) {
         itr_t itr = circle.begin();
         itr_t opp = circle.begin();
-        advance(opp, circle.size() / 2);
+        advance(opp, circle.size() >> 1);
 
         cout << "Number of players playing a round: " << circle.size() << endl;
         play_round(circle, itr, opp);
