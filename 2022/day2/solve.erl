@@ -80,6 +80,4 @@ test() ->
     % Level 2
     {15, _} = play(parse_file("test_input.txt", 2)),
 
-
-
     ok.
