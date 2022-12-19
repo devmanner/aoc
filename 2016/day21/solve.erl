@@ -1,6 +1,6 @@
 -module(solve).
+-compile(nowarn_export_all).
 -compile(export_all).
-
 
 index_of(X, L) ->
     index_of(X, L, 0).
@@ -57,8 +57,10 @@ dmc({rotate, right, S}, L) ->
 dmc({rotate_pos, X}, L) ->
     % There is not always just one solution to this. There may be two...
     % Both are valid but we assume that the test input has no such strings.
-    [Rot] = find_rotation(X, L),
-    Rot;
+    case find_rotation(X, L) of
+        [Rot] -> Rot;
+        Error -> throw({ambiguous_result, Error})
+    end;
 dmc({reverse, X, Y}, L) ->
     cmd({reverse, X, Y}, L);
 dmc({move, X, Y}, L) ->
@@ -78,6 +80,8 @@ find_rotation(X, L, N, Matches) when N > 0 ->
             find_rotation(X, L, N-1, Matches)
     end.
 
+% Parse file to a list of commands on the form:
+% [{command, arg1, arg2...}]
 parse_file(Fname) ->
     {ok, FD} = file:open(Fname, [read]),
     parse_file(FD, []).
@@ -131,7 +135,7 @@ test_all_inv() ->
         {rotate, right, 3},
         {rotate, left, 2},
         % Not testing rotate_pos since it's not always a sigle solution
-        %{rotate_pos, $c},
+        % {rotate_pos, $c},
         {reverse, 3, 5},
         {move, 1, 3}
     ],
@@ -185,7 +189,6 @@ test() ->
     [2,1,3,4] = cmd({move, 0, 1}, [1,2,3,4]),
     [2,3,1,4] = cmd({move, 0, 2}, [1,2,3,4]),
 
-
     "ebcda" = cmd({swap_pos, 4, 0}, "abcde"),
     "edcba" = cmd({swap_letter, $d, $b}, "ebcda"),
     "abcde" = cmd({reverse, 0, 4}, "edcba"),
@@ -199,15 +202,14 @@ test() ->
     test_inv(2, 10),
     test_inv(3, 10),
     test_inv(4, 10),
-%    test_inv(5, 10),
+%    test_inv(5, 10), % ambiguous_result
     test_inv(6, 10),
     test_inv(7, 10),
     test_inv(8, 10),
     test_inv(9, 10),
- %   test_inv(10,10),
-
- %   test_inv(1, 9),
- %   test_inv(8, 9),
+ %   test_inv(10,10), % ambiguous_result
+ %   test_inv(1, 9), % ambiguous_result
+ %   test_inv(8, 9), % ambiguous_result
     test_inv(9, 9),
 
     test_all_inv(),
