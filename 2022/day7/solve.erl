@@ -81,7 +81,29 @@ do1() ->
     Tree = parse_file("input.txt"),
     lists:foldl(G, 0, foldl(F, [], Tree)).
 
+
+do2() ->
+    Tree = parse_file("input.txt"),
+    UsedSpace = dir_size(Tree),
+    FreeSpace = 70000000 - UsedSpace,
+    AdditionalSpace = 30000000 - FreeSpace,
+
+    F = fun ({file, _Size, _Name}, Acc) ->
+                Acc;
+            ({dir, Name, _Contens}=X, {FoundName, FoundSize}) ->
+                Size = dir_size(X),
+                case (Size >= AdditionalSpace) and (Size < FoundSize) of
+                    true -> {Name, Size};
+                    false -> {FoundName, FoundSize}
+                end
+    end,
+
+    foldl(F, {undef, inf}, Tree).
+
 test() ->
+    1513699 = do1(),
+
+    {"mbtsvblj",7991939} = do2(),
     ok.
 
 
