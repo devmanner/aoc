@@ -31,6 +31,8 @@ operators2() ->
 
 find(Result, Operands, Operators) ->
     find(Result, Operands, Operators, 0).
+find(Result, [], _Operators, Acc) when Acc > Result ->
+    false;
 find(Result, [], _Operators, Acc) ->
     Acc == Result;
 find(Result, [Op|Ops], Operators, Acc) ->
