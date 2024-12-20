@@ -22,17 +22,53 @@ blink([]) ->
     [];
 blink([0|T]) ->
     [1|blink(T)];
-blink([H|T]) ->
+blink([H|T]) when is_integer(H) ->
     case is_even(digits(H)) of
         true ->
             {High, Low} = split(H),
             [High, Low|blink(T)];
         false ->
             [H*2024|blink(T)]
+    end;
+% For stage 2 we add support for Cntlists
+blink([{0, N}|T]) ->
+    [{1, N}|blink(T)];
+blink([{H, N}|T]) ->
+    case is_even(digits(H)) of
+        true ->
+            {High, Low} = split(H),
+            [{High, N}, {Low, N}|blink(T)];
+        false ->
+            [{H*2024, N}|blink(T)]
     end.
 
 blink(L, N) ->
-    lists:foldl(fun(X, Acc) -> io:format("Blink: ~p ~p~n", [X, length(Acc)]), blink(Acc) end, L, lists:seq(1, N)).
+    Fn = fun(_X, Acc) ->
+        blink(Acc)
+    end,
+    lists:foldl(Fn, L, lists:seq(1, N)).
+
+list_to_cntlist(L) ->
+    compact_cntlist(lists:map(fun(X) when is_integer(X) -> {X, 1} end, L)).
+
+compact_cntlist([{_,_}|_]=Cntlist) ->
+    F = fun({X, N1}, Acc) ->
+        case hd(Acc) of
+            {X, N2} -> [{X, N1+N2}|tl(Acc)];
+            _ -> [{X, N1}|Acc]
+        end 
+    end,
+    L = lists:sort(Cntlist),
+    lists:reverse(lists:foldl(F, [hd(L)], tl(L))).
+
+length_after_blinks(L, N) ->
+    lab(list_to_cntlist(L), N).
+lab(L, 0) ->
+    lists:foldl(fun({_X, N}, Acc) -> Acc + N end, 0, L);
+lab(L, N) ->
+    lab(compact_cntlist(blink(L)), N-1).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 test() ->
     3 = digits(100),
@@ -48,9 +84,6 @@ test() ->
     {1, 1} = split(11),
     {10, 0} = split(1000),
     {1, 0} = split(10),
-
-
-
     
     [253000, 1, 7] = blink([125, 17], 1),
     [253, 0, 2024, 14168] = blink([125, 17], 2),
@@ -62,6 +95,21 @@ test() ->
 
 
     199982 = length(blink([773, 79858, 0, 71, 213357, 2937, 1, 3998391], 25)),
-    ok.
 
-    %length(blink([773, 79858, 0, 71, 213357, 2937, 1, 3998391], 75)).
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    [{1, 3}, {2, 5}, {3, 1}] = list_to_cntlist([3,2,2,2,1,2,2,1,1]),
+
+    [{1, 4}, {2, 1}] = compact_cntlist([{1,1}, {2,1}, {1,1}, {1,2}]),
+
+    F = fun(Blinks) ->
+        Stones = [125, 17],
+        true = length_after_blinks(Stones, Blinks) == length(blink(Stones, Blinks))
+    end,
+    lists:foreach(F, lists:seq(1, 20)),
+
+
+    199982 = length_after_blinks([773, 79858, 0, 71, 213357, 2937, 1, 3998391], 25),
+    237149922829154 = length_after_blinks([773, 79858, 0, 71, 213357, 2937, 1, 3998391], 75),
+
+    ok.
