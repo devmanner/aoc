@@ -103,25 +103,41 @@ region_fence_price2(Region) ->
 % XXXXOO
 % XXxOOO
 % XXOOOO
-find_border([H|_]=Region) ->
-    find_border(Region, H).
-find_border(Region, Coord) ->
-    % We know its 'right' but we take it from dirs as we later on use the order in dirs
-    ToTheRight = plus(delta(hd(dirs())), Coord),
-    case lists:member(ToTheRight, Region) of
-        true -> find_border(Region, ToTheRight);
-        false -> Coord
-    end.
+%find_border([H|_]=Region) ->
+%    find_border(Region, H).
+%find_border(Region, Coord) ->
+%    % We know its 'right' but we take it from dirs as we later on use the order in dirs
+%    ToTheRight = plus(delta(hd(dirs())), Coord),
+%    case lists:member(ToTheRight, Region) of
+%        true -> find_border(Region, ToTheRight);
+%        false -> Coord
+%    end.
 
 in_region(Region, Coord) ->
     lists:member(Coord, Region).
 
 count_edges(Region) ->
-%    Fn = fun(Coord, Visited) ->
-%        {Cnt1, Visited1} = case
-    Border = find_border(Region),
-    {Cnt, _} = count_edges(Region, Border, down, 0, []),
-    Cnt.
+    Fn = fun(Coord, {Cnt, Visited}) ->
+        {Cnt1, Visited1} = case in_region(Region, plus(Coord, delta(up))) of
+            true -> {Cnt, Visited};
+            false -> count_edges(Region, Coord, right, Cnt, Visited)
+        end,
+        {Cnt2, Visited2} = case in_region(Region, plus(Coord, delta(right))) of
+            true -> {Cnt1, Visited1};
+            false -> count_edges(Region, Coord, down, Cnt1, Visited1)
+        end,
+        {Cnt3, Visited3} = case in_region(Region, plus(Coord, delta(down))) of
+            true -> {Cnt2, Visited2};
+            false -> count_edges(Region, Coord, left, Cnt2, Visited2)
+        end,
+        {Cnt4, Visited4} = case in_region(Region, plus(Coord, delta(left))) of
+            true -> {Cnt3, Visited3};
+            false -> count_edges(Region, Coord, up, Cnt3, Visited3)
+        end,
+        {Cnt4, Visited4}
+    end,
+    {C, _} = lists:foldl(Fn, {0, []}, Region),
+    C.
 
 count_edges(Region, Coord, Dir, Cnt, Visited) ->
     case in_region(Visited, {Coord, Dir}) of
@@ -219,6 +235,9 @@ test() ->
     8 = count_edges([{0,0},{0,1},{0,2},{1,1}]),
 
     80 = fence_price2(solve:find_regions(solve:parse_file("test1.txt"))),
-%    436 = fence_price2(solve:find_regions(solve:parse_file("test2.txt"))),
+    436 = fence_price2(solve:find_regions(solve:parse_file("test2.txt"))),
+    236 = fence_price2(solve:find_regions(solve:parse_file("test7.txt"))),
+    368 = fence_price2(solve:find_regions(solve:parse_file("test8.txt"))),
 
+    946084 = fence_price2(solve:find_regions(solve:parse_file("input.txt"))),
     ok.
